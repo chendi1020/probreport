@@ -1,0 +1,456 @@
+---
+title: "Summary of Probation Analyses"
+date: May 2017
+output: html_document
+
+---
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F, results='hide'}
+# make this an external chunk that can be included in any file
+library(knitr)
+options(width = 130)
+opts_chunk$set(message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = 'fig/')
+
+options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+knit_hooks$set(plot = knitr:::hook_plot_html)
+runif(1)
+```
+
+
+```{r, echo=FALSE, cache=T}
+load("S:/Institutional Research/Chen/Probation/May 2017 New Analysis/ASUSAction/Data/PLVTPid.Rda")
+load( "S:/Institutional Research/Chen/Probation/May 2017 New Analysis/Data/PLVTELSE.Rda")
+library(dplyr)
+#PLVTPid <- PLVTPid %>% mutate(Alltdebt.1= ifelse(is.na(Alltdebt.1) | Alltdebt.1==0, NA, Alltdebt.1),
+ #                             Allstudebt.1= ifelse(is.na(Allstudebt.1) | Allstudebt.1==0, NA, Allstudebt.1),
+  #                            AllParloan.1= ifelse(is.na(AllParloan.1) | AllParloan.1==0, NA, AllParloan.1),
+   #                           AllMSUcost.1= ifelse(is.na(AllMSUcost.1) | AllMSUcost.1==0, NA, AllMSUcost.1))
+PLVTPid <- PLVTPid %>% mutate(Ethnicity= ifelse(Ethnicity %in% c('Asian','Asian/PI','Hawaii/PI'), 'Asian/Hawaii/PI', Ethnicity),
+                              ttlASUScntre= ifelse(TotalASUScnt>=8,'8+', paste(as.character(TotalASUScnt), sep="" )),
+                              Overall= 'Overall')
+
+follow <- PLVTPid[PLVTPid$Conflictremax=='N',]
+
+conflict <- PLVTPid[PLVTPid$Conflictremax=='Y',]
+
+grad <- PLVTPid[PLVTPid$COHORT<=2010 & ! is.na(PLVTPid$COHORT),] %>% mutate(G4= ifelse(GRAD4==100,'Y','N'),
+                                                                            G6= ifelse(GRAD6==100,'Y','N'),
+                                                                            grad6= ifelse(GRAD6==100,1,0),
+                                                                            grad4= ifelse(GRAD4==100,1,0))
+
+PLVTELSE <-  PLVTELSE %>% mutate(Ethnicity= ifelse(Ethnicity %in% c('Asian','Asian/PI','Hawaii/PI'), 'Asian/Hawaii/PI', Ethnicity))%>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN ) %>% mutate(type='ELSE')
+PLVT2 <- PLVTPid %>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN ) %>% mutate(type=' PROB')
+
+PLVT2 <- rbind(PLVTELSE, PLVT2)
+
+
+```
+
+
+<br>
+
+The population included is undergraduate students who had academic probation at the end of the semester from Fall 05 through US15 and their end term academic Status for the subsequent terms were tracked till FS16 (N= `r format(nrow(PLVTPid),big.mark=",") `). The count is unduplicated count. If one has one instance across all terms he/she enrolled within the timeframe that is not in compliance with ASUS policy, he/she is counted as 'Conflict with ASUS Policy'.
+
+
+The distribution of ASUS count among those who conflicted with ASUS policy vs. those in compliance with ASUS policy was shown in Table 1. `r  sprintf("%1.1f%%", 100* sum(follow$TotalASUScnt<=2)/nrow(follow)) ` of 'Policy Followers' have only 1 or 2 ASUS counts. 'Policy Conflicters' consists much more students with more than 2 ASUS count (`r sprintf("%1.1f%%", 100* sum(conflict$TotalASUScnt>2)/nrow(conflict))` vs `r sprintf("%1.1f%%", 100* sum(follow$TotalASUScnt>2)/nrow(follow)) `) . There are `r sum(PLVTPid$TotalASUScnt>=8) ` (`r sprintf("%1.1f%%", 100* sum(PLVTPid$TotalASUScnt>=8)/nrow(PLVTPid))`) students in the population who have at least 8 times of ASUS actions throughout the time period we followed. 
+
+
+
+To link the graduation outcome to the data, we computed the average of 4-year, 6-year graduation rate and time to degree among those who were in the entering cohort prior to 2010 (N=`r format(nrow(grad), big.mark=",")`). The result was shown in Table 2. In general, we found:
+
++ There is a significant relationship between number of ASUS actions and the six-year graduation rate. For every unit increase in ASUS count, the odds of graduating by the sixth year decrease by a factor of `r  round(exp(coef(glm(grad6 ~TotalASUScnt,family='binomial',data=grad)))['TotalASUScnt'],2)`(P `r ifelse(summary(glm(grad6 ~TotalASUScnt,family='binomial',data=grad))$coefficients['TotalASUScnt','Pr(>|z|)']<0.0001, '<0.0001', paste0('=',summary(glm(grad6 ~TotalASUScnt,family='binomial',data=grad))$coefficients['TotalASUScnt','Pr(>|z|)'],sep="") )  `).
+
++ Similarly, there is a significant relationship between number of ASUS actions and the four-year graduation rate. For every unit increase in ASUS count, the odds of graduating by the fourth year decrease by a factor of `r  round(exp(coef(glm(grad4 ~TotalASUScnt,family='binomial',data=grad)))['TotalASUScnt'],2)`(P `r ifelse(summary(glm(grad4 ~TotalASUScnt,family='binomial',data=grad))$coefficients['TotalASUScnt','Pr(>|z|)']<0.0001, '<0.0001', paste0('=',summary(glm(grad6 ~TotalASUScnt,family='binomial',data=grad))$coefficients['TotalASUScnt','Pr(>|z|)'],sep="") )  `).
+
++ The average four-year graduation rates for students who followed ASUS policy are significantly higher (`r sprintf("%1.1f%%",tapply(grad$GRAD4, grad$Conflictremax, mean)['N'])` vs. `r sprintf("%1.1f%%",tapply(grad$GRAD4, grad$Conflictremax, mean)['Y'])`) than those who conflicted with the policy (P `r ifelse(chisq.test(grad$G4, grad$Conflictremax)[3][[1]]<0.0001, '<0.0001', paste0('=',round(chisq.test(grad$G4, grad$Conflictremax)[3][[1]],4),sep="") )  `).
+
++ The average six-year graduation rates for students who followed ASUS policy are significantly higher (`r sprintf("%1.1f%%",tapply(grad$GRAD6, grad$Conflictremax, mean)['N'])` vs. `r sprintf("%1.1f%%",tapply(grad$GRAD6, grad$Conflictremax, mean)['Y'])`)  than those who conflicted with the policy (P `r ifelse(chisq.test(grad$G6, grad$Conflictremax)[3][[1]]<0.0001, '<0.0001', paste0('=',round(chisq.test(grad$G6, grad$Conflictremax)[3][[1]],4),sep="") )  `).
+
++ The average time to degree for students who followed ASUS policy is faster (`r round(tapply(grad$TTD_IN_YEARS, grad$Conflictremax, mean, na.rm=T)['N'],1)` vs. `r round(tapply(grad$TTD_IN_YEARS, grad$Conflictremax, mean, na.rm=T)['Y'],1)`)  than students who did not follow the policy (P `r ifelse(t.test(TTD_IN_YEARS~ Conflictremax, data=grad)$p.value[[1]]<0.0001, '<0.0001', paste0('=',round(t.test(TTD_IN_YEARS~ Conflictremax, data=grad)$p.value[[1]],4),sep="") )  `).
+
+<br>
+
+```{r, echo=FALSE, cache=T}
+source("H:/R setup/ODBC Connection.R")
+
+PLVT <- sqlQuery(SISFull, "select distinct PLVT.Pid, PLVT.Term_Seq_Id,PLVT.Term_Code, Primary_Lvl_Flag, Student_Level_Code
+                  from SISPLVT PLVT
+                 where 
+                 PLVT.System_Rgstn_Status in ('R','E','C','W') and PLVT.Term_Seq_Id >= 1054 and PLVT.Term_Seq_Id <= 1164
+                 ",stringsAsFactors=F
+                 
+)
+
+PLVT <- merge(PLVT, PLVTPid[,c('Pid','Asusminterm')], by='Pid')
+PLVT <- PLVT[PLVT$Term_Seq_Id>=PLVT$Asusminterm,] %>% select(Pid, Student_Level_Code) %>% unique
+ACDLvl <- sqlFetch(SISInfo,'ACADLVL')
+PLVT <- merge(PLVT, ACDLvl, by.x = 'Student_Level_Code', by.y = 'Acdmc_Level_Code')
+
+dup <- nrow(PLVT %>% group_by(Pid) %>% summarise(n=n()) %>% filter(n>1))
+```
+
+
+The loan and institutional aid (MSU Cost) data was obtained from both SISInfo and SamFrzn. It reflects all money the student had borrowed or granted while enrolled at MSU from their intial probation term to as of 05/25/2017. The loan type includes student loan and parent. Within student loan, it also has subtypes including Stafford, Perkins, Grad PLUS and private. The institutional aid includes both need-based and non-need based aid. The loan/aid amount is the cumulative dollar amount the student had borrowed or granted within the timeframe without breaking down by student levels or degrees. For students working for multiple levels/degrees within the time period, their loan/aid may also include additional money they borrowed/given for working on levels other than undergraduates. There are only `r dup` (`r  sprintf("%1.1f%%", dup/nrow(PLVTPid)*100 )`) out of `r format(nrow(PLVTPid), big.mark=",")` students who had multiple levels from their intital probation term till Fall 2016. Below is the frequency table for number of students in each level within the timeframe. The count is duplicated because one can have multiple levels.
+
+<br>
+
+```{r, echo=F}
+library(dplyr)
+library(htmlTable)
+tab<-PLVT %>% group_by(Long_Desc) %>% summarise(Headcount= n() )%>% arrange(desc(Headcount)) %>% rename(Student.Level= Long_Desc)
+#datatable(as.data.frame(tab), rownames = F)
+tab<- as.data.frame(tab) %>% mutate(Headcount= ifelse(Headcount>=1000, format(Headcount, big.mark=","), Headcount))
+htmlTable(tab,rnames=F,caption="Students by acdemic level", align="lrrr",
+          
+          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab)),
+                           matrix("", ncol=ncol(tab), nrow=nrow(tab))))
+
+```
+
+<br>
+<br>
+
+
+Table 3 include the total number of borrowers, average loan amount for borrowers breaking down by number of ASUS action count and whether one followed ASUS policy. The analyses were conducted for total loan, student and parent loan separately. All cohorts were included. Generally, among borrowers, compared to those who 'follow the policy', those who 'conflicted with ASUS policy' borrowed 
+
++ an average of `r paste0('$', format(round(lm(Alltdebt.1 ~ Conflictremax, data=PLVTPid)$coefficients['ConflictremaxY']),big.mark=",")) ` more for total loan amount  (P `r ifelse(summary(lm(Alltdebt.1 ~ Conflictremax, data=PLVTPid))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Alltdebt.1 ~ Conflictremax, data=PLVTPid))$coefficients[2,4],sep="") )  `).
+
++ an average of `r paste0('$', format(round(lm(Allstudebt.1 ~ Conflictremax, data=PLVTPid)$coefficients['ConflictremaxY']),big.mark=",")) ` more for student loan (P `r ifelse(summary(lm(Allstudebt.1 ~ Conflictremax, data=PLVTPid))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Allstudebt.1 ~ Conflictremax, data=PLVTPid))$coefficients[2,4],sep="") )  `).
+
+Those who 'conflicted with ASUS policy' also costed MSU 
+
++ an average of `r paste0('$', format(round(lm(AllMSUcost.1 ~ Conflictremax, data=PLVTPid)$coefficients['ConflictremaxY']),big.mark=",")) ` more in terms of institutional aid (P `r ifelse(summary(lm(AllMSUcost.1 ~ Conflictremax, data=PLVTPid))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Allstudebt.1 ~ Conflictremax, data=PLVTPid))$coefficients[2,4],sep="") )  `).
+
+
+There is also significant positive association between number of ASUS action and loan/Aid amount.  Students with every unit increase in ASUS action tend to :
+
++ borrow an average of `r paste0('$', format(round(lm(Alltdebt.1 ~ TotalASUScnt, data=PLVTPid)$coefficients['TotalASUScnt']),big.mark=",")) ` more for total loan amount  (P `r ifelse(summary(lm(Alltdebt.1 ~ TotalASUScnt, data=PLVTPid))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Alltdebt.1 ~ TotalASUScnt, data=PLVTPid))$coefficients[2,4],sep="") )  `).
+
++ borrow an average of `r paste0('$', format(round(lm(Allstudebt.1 ~ TotalASUScnt, data=PLVTPid)$coefficients['TotalASUScnt']),big.mark=",")) ` more for student loan (P `r ifelse(summary(lm(Allstudebt.1 ~ TotalASUScnt, data=PLVTPid))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Allstudebt.1 ~ TotalASUScnt, data=PLVTPid))$coefficients[2,4],sep="") )  `).
+
++ cost an average of `r paste0('$', format(round(lm(AllMSUcost.1 ~ TotalASUScnt, data=PLVTPid)$coefficients['TotalASUScnt']),big.mark=",")) ` more in terms of institutional aid (P `r ifelse(summary(lm(AllMSUcost.1 ~ TotalASUScnt, data=PLVTPid))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Allstudebt.1 ~ TotalASUScnt, data=PLVTPid))$coefficients[2,4],sep="") )  `).
+
+Both ASUS count and whether students following ASUS policy have significant associations with the amount of total institutional aid (MSU cost). Being a 'Policy Conflicter' enhances the effect of ASUS actions in increase of MSU Cost (P `r ifelse(summary(lm(AllMSUcost.1 ~ TotalASUScnt* Conflictremax, data=PLVTPid))$coefficients[4,4]<0.0001, '<0.0001', paste0('=',summary(lm(AllMSUcost.1 ~ TotalASUScnt* Conflictremax, data=PLVTPid))$coefficients[4,4],sep="") )  `).
+
+
+Page 4 includes the same loan information along with the graduation outcome for students in the cohorts which can possibly have a six-year graduation rate (cohort <=2010 in this case). In general, among borrowers, compared to those who 'follow the policy', those who 'conflicted with ASUS policy' tend to:
+
++ borrow an average of `r paste0('$', format(round(lm(Alltdebt.1 ~ Conflictremax, data=grad)$coefficients['ConflictremaxY']),big.mark=",")) ` more for total loan amount  (P `r ifelse(summary(lm(Alltdebt.1 ~ Conflictremax, data=grad))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Alltdebt.1 ~ Conflictremax, data=grad))$coefficients[2,4],sep="") )  `).
+
++ borrow an average of `r paste0('$', format(round(lm(Allstudebt.1 ~ Conflictremax, data=grad)$coefficients['ConflictremaxY']),big.mark=",")) ` more for student loan (P `r ifelse(summary(lm(Allstudebt.1 ~ Conflictremax, data=grad))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Allstudebt.1 ~ Conflictremax, data=grad))$coefficients[2,4],sep="") )  `).
+
++ cost MSU an average of `r paste0('$', format(round(lm(AllMSUcost.1 ~ Conflictremax, data=grad)$coefficients['ConflictremaxY']),big.mark=",")) ` more in terms of institutional aid (P `r ifelse(summary(lm(AllMSUcost.1 ~ Conflictremax, data=grad))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Allstudebt.1 ~ Conflictremax, data=grad))$coefficients[2,4],sep="") )  `).
+
+
+There is also significant positive association between number of ASUS action and loan amount.  Students with every unit increase in ASUS action tend to :
+
++ borrow an average of `r paste0('$', format(round(lm(Alltdebt.1 ~ TotalASUScnt, data=grad)$coefficients['TotalASUScnt']),big.mark=",")) ` more for total loan amount  (P `r ifelse(summary(lm(Alltdebt.1 ~ TotalASUScnt, data=grad))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Alltdebt.1 ~ TotalASUScnt, data=grad))$coefficients[2,4],sep="") )  `).
+
++ borrow an average of `r paste0('$', format(round(lm(Allstudebt.1 ~ TotalASUScnt, data=grad)$coefficients['TotalASUScnt']),big.mark=",")) ` more for student loan (P `r ifelse(summary(lm(Allstudebt.1 ~ TotalASUScnt, data=grad))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Allstudebt.1 ~ TotalASUScnt, data=grad))$coefficients[2,4],sep="") )  `).
+
+
++ cost an average of `r paste0('$', format(round(lm(AllMSUcost.1 ~ TotalASUScnt, data=grad)$coefficients['TotalASUScnt']),big.mark=",")) ` more in terms of institutional aid (P `r ifelse(summary(lm(AllMSUcost.1 ~ TotalASUScnt, data=grad))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Allstudebt.1 ~ TotalASUScnt, data=grad))$coefficients[2,4],sep="") )  `).
+
+Similarly,Both ASUS count and whether students following ASUS policy have significant associations with the amount of total institutional aid (MSU cost). Being a 'Policy Conflicter' enhances the effect of ASUS actions in increase of MSU Cost (P `r ifelse(summary(lm(AllMSUcost.1 ~ TotalASUScnt* Conflictremax, data=grad))$coefficients[4,4]<0.0001, '<0.0001', paste0('=',summary(lm(AllMSUcost.1 ~ TotalASUScnt* Conflictremax, data=PLVTPid))$coefficients[4,4],sep="") )  `).
+
+
+<br>
+<br>
+
+
+```{r, echo=F, cache=T}
+tab1 <- PLVTPid %>% group_by(TotalASUScnt, Conflictremax) %>% summarise(hc=n()) %>%  mutate( pct=hc/nrow(PLVTPid))
+tab1 <- tab1 %>% group_by(Conflictremax) %>%mutate(grpttl=sum(hc), pctgrp=hc/grpttl)
+
+tabt <- PLVTPid %>% group_by( Conflictremax) %>% summarise(hc=n()) %>%  mutate( pct=hc/sum(hc),
+                                                                                TotalASUScnt = 'All',
+                                                                                pctgrp= NA)
+tab1 <- tab1[, names(tabt)]
+tab1 <- rbind(as.data.frame(tabt), as.data.frame(tab1)) %>% select(Conflictremax,TotalASUScnt,hc, pct,pctgrp) %>% arrange(Conflictremax,TotalASUScnt)
+
+tab1$hc <- ifelse(tab1$hc>=1000,format(tab1$hc, big.mark = ","), tab1$hc) 
+tab1$pct <- sprintf("%1.1f%%", 100* tab1$pct)
+tab1$pctgrp <- ifelse(! is.na(tab1$pctgrp), sprintf("%1.1f%%", 100* tab1$pctgrp), tab1$pctgrp)
+names(tab1) <- c('Conflict', '  ASUS.Action.Count', 'Headcount', '%', '% within group')
+tab1 <- tab1 %>% select(-c(Conflict))
+
+library(htmlTable)
+htmlTable(tab1,rnames=F,caption="Table1 - Distribution of ASUS action count- All cohorts included",
+          rgroup = c('Follow ASUS Policy', 'Conflict with ASUS Policy'),
+          n.rgroup = c(10,10),tfoot="Source: SISFull ",
+          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab1)),
+                           matrix("", ncol=ncol(tab1), nrow=nrow(tab1))))
+```
+
+
+<br>
+<br>
+
+
+```{r, echo=F, cache=T}
+tab2 <- grad %>% group_by(TotalASUScnt, Conflictremax) %>% summarise(hc=n(),
+                                                                     gradrate4= mean(GRAD4),
+                                                                     gradrate6= mean(GRAD6),
+                                                                     TTD= mean(TTD_IN_YEARS, na.rm=T)) %>%  mutate( pct=hc/nrow(grad))
+
+tab2t <- grad %>% group_by( Conflictremax) %>% summarise(hc=n(),gradrate4= mean(GRAD4),gradrate6= mean(GRAD6),
+                                               TTD= mean(TTD_IN_YEARS, na.rm=T)) %>%  mutate( pct=hc/nrow(grad), TotalASUScnt='All')
+
+overall <- grad %>% summarise(hc=n(),gradrate4= mean(GRAD4),gradrate6= mean(GRAD6),
+                                               TTD= mean(TTD_IN_YEARS, na.rm=T))%>% mutate(Conflictremax=' Overall',pct=1, TotalASUScnt=' ')
+
+tab2 <- rbind(as.data.frame(tab2t), as.data.frame(tab2),as.data.frame(overall)) %>% select(Conflictremax,TotalASUScnt,hc, pct,gradrate4, gradrate6, TTD) %>% arrange(Conflictremax)
+
+
+tab2$hc <- ifelse(tab2$hc>=1000,format(tab2$hc, big.mark = ","), tab2$hc) 
+tab2$pct <- sprintf("%1.1f%%", 100* tab2$pct)
+tab2$gradrate4 <- ifelse(! is.na(tab2$gradrate4), sprintf("%1.1f%%",tab2$gradrate4), tab2$gradrate4)
+tab2$gradrate6 <- ifelse(! is.na(tab2$gradrate6), sprintf("%1.1f%%",tab2$gradrate6), tab2$gradrate6)
+tab2$TTD<- ifelse( is.nan(tab2$TTD), NA, round(tab2$TTD,1))
+tab2 <- tab2 %>% select(-c(Conflictremax))
+
+names(tab2) <- c( '  ASUS.Action.Count', 'Headcount', '%', '4yr Grad Rate', '6yr Grad Rate', 'Avg TTD')
+
+htmlTable(tab2,rnames=F,caption="Table2 - Graduation Outcome in relation to the distribution of ASUS Action Counts - 
+          Limited to cohort within a six-year graduation rate (till 2010 cohort)",
+          rgroup = c('Overall','Follow ASUS Policy', 'Conflict with ASUS Policy'),align="lrrr",
+          n.rgroup = c(1,10,10), tfoot="Source: SISFull ",
+          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab2)),
+                           matrix("", ncol=ncol(tab2), nrow=nrow(tab2))))
+```
+
+
+<br>
+<br>
+
+
+```{r, echo=F, cache=T}
+tab3 <- PLVTPid %>%  group_by( Conflictremax,TotalASUScnt) %>%
+        summarise(hc=n(), Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
+                   avgsdebt= mean(Allstudebt.1, na.rm=T),
+                  avgpdebt=mean(AllParloan.1, na.rm=T),
+                   avgmsuc=mean(AllMSUcost.1, na.rm=T)) 
+
+tab3t <- PLVTPid %>% mutate(TotalASUScnt= 'All')%>%  group_by( Conflictremax,TotalASUScnt) %>%
+        summarise(hc=n(), Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
+                   avgsdebt= mean(Allstudebt.1, na.rm=T),
+                  avgpdebt=mean(AllParloan.1, na.rm=T),
+                   avgmsuc=mean(AllMSUcost.1, na.rm=T)) 
+
+overall3 <- PLVTPid %>% mutate(Conflictremax=' Overall',TotalASUScnt= ' ')%>%  group_by( Conflictremax,TotalASUScnt) %>%
+        summarise(hc=n(), Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
+                   avgsdebt= mean(Allstudebt.1, na.rm=T),
+                  avgpdebt=mean(AllParloan.1, na.rm=T),
+                   avgmsuc=mean(AllMSUcost.1, na.rm=T))
+
+tab3 <- rbind(as.data.frame(tab3t), as.data.frame(tab3),as.data.frame(overall3))  %>% arrange(Conflictremax)%>%
+        mutate(hc=ifelse(hc>=1000,format(hc, big.mark = ","), hc),
+               Ndebt= ifelse(Ndebt>=1000,format(Ndebt, big.mark = ","), Ndebt),
+              avgtdebt=  ifelse(avgtdebt>=1000,format(round(avgtdebt), big.mark = ","), round(avgtdebt) ),
+               avgsdebt= ifelse(avgsdebt>=1000,format(round(avgsdebt), big.mark = ","), round(avgsdebt) ),
+               avgpdebt= ifelse(avgpdebt>=1000,format(round(avgpdebt), big.mark = ","), round(avgpdebt) ),
+               avgmsuc= ifelse(avgmsuc>=1000,format(round(avgmsuc), big.mark = ","), round(avgmsuc) ))
+
+
+tab3 <- tab3 %>% select(-c(Conflictremax))
+tab3 <- as.data.frame(tab3) %>% mutate(avgtdebt=  gsub(" ", "", paste0("$", avgtdebt, sep=""), fixed = TRUE),
+        avgsdebt=  gsub(" ", "", paste0("$", avgsdebt, sep=""), fixed = TRUE),avgpdebt= gsub(" ", "", paste0("$", avgpdebt, sep=""), fixed = TRUE), avgmsuc= gsub(" ", "", paste0("$", avgmsuc, sep=""), fixed = TRUE))
+
+names(tab3) <- c( '  ASUS.Action.Count', 'Headcount', 'N with FA data', 'Avg Total Debt', 'Avg Student Debt', 'Avg Parent Debt', 'Avg MSU Cost')
+
+htmlTable(tab3,rnames=F,caption="Table3 - THe average amount of loan and institutional aid - All Cohorts included",
+          rgroup = c('Overall','Follow ASUS Policy', 'Conflict with ASUS Policy'),align="lrrr",
+          n.rgroup = c(1,10,10), tfoot="Source: SISFull ",
+          
+          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab3)),
+                           matrix("", ncol=ncol(tab3), nrow=nrow(tab3))))
+```
+
+
+
+<br>
+<br>
+
+
+```{r, echo=F, cache=T}
+tab4 <- grad %>%  group_by( Conflictremax,TotalASUScnt) %>%
+        summarise(hc=n(), gradrate4= mean(GRAD4), gradrate6=mean(GRAD6), ttd=mean(TTD_IN_YEARS, na.rm=T),
+                  Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
+                   avgsdebt= mean(Allstudebt.1, na.rm=T),
+                  avgpdebt=mean(AllParloan.1, na.rm=T),
+                   avgmsuc=mean(AllMSUcost.1, na.rm=T)) 
+
+tab4t <- grad %>% mutate(TotalASUScnt= 'All')%>%  group_by( Conflictremax,TotalASUScnt) %>%
+        summarise(hc=n(), gradrate4= mean(GRAD4), gradrate6=mean(GRAD6), ttd=mean(TTD_IN_YEARS, na.rm=T),
+                  Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
+                   avgsdebt= mean(Allstudebt.1, na.rm=T),
+                  avgpdebt=mean(AllParloan.1, na.rm=T),
+                   avgmsuc=mean(AllMSUcost.1, na.rm=T)) 
+
+overall4 <- grad %>% mutate(Conflictremax=' Overall',TotalASUScnt= ' ')%>%  group_by( Conflictremax,TotalASUScnt) %>%
+        summarise(hc=n(), gradrate4= mean(GRAD4), gradrate6=mean(GRAD6), ttd=mean(TTD_IN_YEARS, na.rm=T),
+                  Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
+                   avgsdebt= mean(Allstudebt.1, na.rm=T),
+                  avgpdebt=mean(AllParloan.1, na.rm=T),
+                   avgmsuc=mean(AllMSUcost.1, na.rm=T))
+
+tab4 <- rbind(as.data.frame(tab4t), as.data.frame(tab4),as.data.frame(overall4))  %>% arrange(Conflictremax)%>%
+        mutate(hc=ifelse(hc>=1000,format(hc, big.mark = ","), hc),
+              gradrate4= ifelse(! is.na(gradrate4), sprintf("%1.1f%%",gradrate4), gradrate4),
+               gradrate6= ifelse(! is.na(gradrate6), sprintf("%1.1f%%",gradrate6), gradrate6),
+              ttd= ifelse(is.nan(ttd),NA, round(ttd,1)),
+               Ndebt= ifelse(Ndebt>=1000,format(Ndebt, big.mark = ","), Ndebt),
+              avgtdebt=  ifelse(avgtdebt>=1000,format(round(avgtdebt), big.mark = ","), round(avgtdebt) ),
+               avgsdebt= ifelse(avgsdebt>=1000,format(round(avgsdebt), big.mark = ","), round(avgsdebt) ),
+               avgpdebt= ifelse(avgpdebt>=1000,format(round(avgpdebt), big.mark = ","), round(avgpdebt) ),
+               avgmsuc= ifelse(avgmsuc>=1000,format(round(avgmsuc), big.mark = ","), round(avgmsuc) ))
+
+
+tab4 <- tab4 %>% select(-c(Conflictremax))
+tab4 <- as.data.frame(tab4) %>% mutate(avgtdebt=  gsub(" ", "", paste0("$", avgtdebt, sep=""), fixed = TRUE),
+        avgsdebt=  gsub(" ", "", paste0("$", avgsdebt, sep=""), fixed = TRUE),avgpdebt= gsub(" ", "", paste0("$", avgpdebt, sep=""), fixed = TRUE), avgmsuc= gsub(" ", "", paste0("$", avgmsuc, sep=""), fixed = TRUE))
+
+names(tab4) <- c( ' ASUS.Action.Count', 'Headcount', 'Grad by 4yr', 'Grad by 6yr','Avg TTD' , 'N with FA data', 'Avg Total Debt', 'Avg Student Debt', 'Avg Parent Debt', 'Avg MSU Cost')
+
+htmlTable(tab4,rnames=F,caption="Table4 - THe average amount of loan and institutional aid - Limited to Cohorts with six-year grad rate (till 2010 cohort)",
+          rgroup = c('Overall','Follow ASUS Policy', 'Conflict with ASUS Policy'),align="lrrr",
+          n.rgroup = c(1,10,10), tfoot="Source: SISFull. Note: FA data contains cumulative amount of loans/institutional aid at MSU since the intital probation term to 05/25/2017 ",
+          
+          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab4)),
+                           matrix("", ncol=ncol(tab4), nrow=nrow(tab4))))
+```
+
+
+
+
+```{r, echo=FALSE}
+library(Gmisc)
+getT1Stat1 <- function(varname, digits=1){
+        getDescriptionStatsBy(PLVTPid[, varname], 
+                              PLVTPid$ttlASUScntre, 
+                              add_total_col=TRUE,
+                              show_all_values=TRUE, 
+                              hrzl_prop=F,
+                              statistics=F, 
+                              html=TRUE, 
+                              digits=digits)
+}
+
+table_data1 <- list()
+
+table_data1[["Overall"]] <- getT1Stat1("Overall")
+table_data1[["Gender"]] <- getT1Stat1("Gndr_Flag")
+table_data1[["Ethnicity"]] <- getT1Stat1("Ethnicity")
+table_data1[["Pell 1st Yr"]] <- getT1Stat1("PELL_1ST_YR")
+table_data1[["Pell Any Yr"]] <- getT1Stat1("PELL_ANY_YEAR")
+table_data1[["FAFSA 1st Gen"]] <- getT1Stat1("FIRST_GEN_FA_1ST_YR")
+table_data1[["Admission 1st Gen"]] <- getT1Stat1("FIRST_GEN")
+
+
+rgroup <- c()
+n.rgroup <- c()
+output_data1 <- NULL
+for (varlabel in names(table_data1)){
+        output_data1 <- rbind(output_data1, 
+                             table_data1[[varlabel]])
+        rgroup <- c(rgroup, 
+                    varlabel)
+        n.rgroup <- c(n.rgroup, 
+                      nrow(table_data1[[varlabel]]))
+}
+
+```
+
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+
+##### Demographic Characteristics of ASUS population by ASUS count
+```{r, echo=FALSE}
+library(Gmisc)
+#colnames(output_data1) <- c('Demographic Variable', colnames(output_data1))
+htmlTable(output_data1[c(1:11,13,17,22,25),], align="rrrr",
+          rgroup=rgroup, n.rgroup=c(1,2,8,1,1,1,1), 
+          rgroupCSSseparator="   ", 
+          
+          rowlabel=" ", 
+          caption="Population consists of undergrads who had academic probation at the end of the semester from Fall 05 through US15 ", 
+          tfoot="NOte: ASUS population was tracked till end of FS16. The ASUS count was calcuated from their first semester with acdemic probation till FS16. The students' entering cohort could be earlier than FS05, therefore, they may have different ASUS count if different tracking timframe is applied. ", 
+        
+          css.cell = rbind(rep("background: lightgrey; padding-left: 3.5em; padding-right: 3.5em;", times=ncol(output_data1)+1),
+                           matrix("", ncol=ncol(output_data1)+1, nrow=nrow(output_data1[c(1:11,13,17,22,25),]))))
+```
+
+
+
+```{r, echo=FALSE}
+PLVT2$Overall <- 'Overall'
+getT1Stat1 <- function(varname, digits=1){
+        getDescriptionStatsBy(PLVT2[, varname], 
+                              PLVT2$type, 
+                              add_total_col=TRUE,
+                              show_all_values=TRUE, 
+                              hrzl_prop=F,
+                              statistics=F, 
+                              html=TRUE, 
+                              digits=digits)
+}
+
+table_data1 <- list()
+
+table_data1[["Overall"]] <- getT1Stat1("Overall")
+table_data1[["Gender"]] <- getT1Stat1("Gndr_Flag")
+table_data1[["Ethnicity"]] <- getT1Stat1("Ethnicity")
+table_data1[["Pell 1st Yr"]] <- getT1Stat1("PELL_1ST_YR")
+table_data1[["Pell Any Yr"]] <- getT1Stat1("PELL_ANY_YEAR")
+table_data1[["FAFSA 1st Gen"]] <- getT1Stat1("FIRST_GEN_FA_1ST_YR")
+table_data1[["Admission 1st Gen"]] <- getT1Stat1("FIRST_GEN")
+
+
+rgroup <- c()
+n.rgroup <- c()
+output_data1 <- NULL
+for (varlabel in names(table_data1)){
+        output_data1 <- rbind(output_data1, 
+                             table_data1[[varlabel]])
+        rgroup <- c(rgroup, 
+                    varlabel)
+        n.rgroup <- c(n.rgroup, 
+                      nrow(table_data1[[varlabel]]))
+}
+
+```
+
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+
+##### Demographic Characteristics of ASUS population vs. Other undergraduates
+```{r, echo=FALSE}
+library(Gmisc)
+#colnames(output_data1) <- c('Demographic Variable', colnames(output_data1))
+htmlTable(output_data1[c(1:12,14,18,23,26),], align="lrrr",
+          rgroup=rgroup, n.rgroup=c(1,2,9,1,1,1,1), 
+          rgroupCSSseparator="   ", 
+          
+          rowlabel=" ", 
+          caption="PROB consists of undergrads who had at least one academic probation at the end of the semester from Fall 05 through US15,
+          ELSE are undergrads who enrolled during the same timeframe but had not had one ASUS status till FS16", 
+          tfoot="NOte: ASUS population was tracked till end of FS16. The ASUS count was calcuated from their first semester with acdemic probation till FS16. The students' entering cohort could be earlier than FS05, therefore, they may have different ASUS count if different tracking timframe is applied. ", 
+        
+          css.cell = rbind(rep("background: lightgrey; padding-left: 3.5em; padding-right: 3.5em;", times=ncol(output_data1)+1),
+                           matrix("", ncol=ncol(output_data1)+1, nrow=nrow(output_data1[c(1:12,14,18,23,26),]))))
+```
