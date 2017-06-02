@@ -1,0 +1,9 @@
+base
+knitr
+dplyr
+RODBC
+DBI
+rJava
+RJDBC
+ROracle
+htmlTable

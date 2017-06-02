@@ -173,7 +173,7 @@ tabt <- PLVTPid %>% group_by( Conflictremax) %>% summarise(hc=n()) %>%  mutate( 
                                                                                 TotalASUScnt = 'All',
                                                                                 pctgrp= NA)
 tab1 <- tab1[, names(tabt)]
-tab1 <- rbind(as.data.frame(tabt), as.data.frame(tab1)) %>% select(Conflictremax,TotalASUScnt,hc, pct,pctgrp) %>% arrange(Conflictremax,TotalASUScnt)
+tab1 <- rbind(as.data.frame(tabt), as.data.frame(tab1)) %>% select(Conflictremax,TotalASUScnt,hc, pct,pctgrp) %>% arrange(Conflictremax)
 
 tab1$hc <- ifelse(tab1$hc>=1000,format(tab1$hc, big.mark = ","), tab1$hc) 
 tab1$pct <- sprintf("%1.1f%%", 100* tab1$pct)
@@ -221,7 +221,7 @@ names(tab2) <- c( '  ASUS.Action.Count', 'Headcount', '%', '4yr Grad Rate', '6yr
 htmlTable(tab2,rnames=F,caption="Table2 - Graduation Outcome in relation to the distribution of ASUS Action Counts - 
           Limited to cohort within a six-year graduation rate (till 2010 cohort)",
           rgroup = c('Overall','Follow ASUS Policy', 'Conflict with ASUS Policy'),align="lrrr",
-          n.rgroup = c(1,10,10), tfoot="Source: SISFull ",
+          n.rgroup = c(1,9,10), tfoot="Source: SISFull ",
           css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab2)),
                            matrix("", ncol=ncol(tab2), nrow=nrow(tab2))))
 ```
@@ -321,7 +321,7 @@ names(tab4) <- c( ' ASUS.Action.Count', 'Headcount', 'Grad by 4yr', 'Grad by 6yr
 
 htmlTable(tab4,rnames=F,caption="Table4 - THe average amount of loan and institutional aid - Limited to Cohorts with six-year grad rate (till 2010 cohort)",
           rgroup = c('Overall','Follow ASUS Policy', 'Conflict with ASUS Policy'),align="lrrr",
-          n.rgroup = c(1,10,10), tfoot="Source: SISFull. Note: FA data contains cumulative amount of loans/institutional aid at MSU since the intital probation term to 05/25/2017 ",
+          n.rgroup = c(1,9,10), tfoot="Source: SISFull. Note: FA data contains cumulative amount of loans/institutional aid at MSU since the intital probation term to 05/25/2017 ",
           
           css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab4)),
                            matrix("", ncol=ncol(tab4), nrow=nrow(tab4))))
