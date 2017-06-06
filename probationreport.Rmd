@@ -24,9 +24,10 @@ runif(1)
 ```
 
 
-```{r, echo=FALSE, cache=T}
+```{r, echo=FALSE}
 load("S:/Institutional Research/Chen/Probation/May 2017 New Analysis/ASUSAction/Data/PLVTPid.Rda")
 load( "S:/Institutional Research/Chen/Probation/May 2017 New Analysis/Data/PLVTELSE.Rda")
+load("S:/Institutional Research/Chen/Probation/May 2017 New Analysis/Data/ASUSD.Rda")
 library(dplyr)
 #PLVTPid <- PLVTPid %>% mutate(Alltdebt.1= ifelse(is.na(Alltdebt.1) | Alltdebt.1==0, NA, Alltdebt.1),
  #                             Allstudebt.1= ifelse(is.na(Allstudebt.1) | Allstudebt.1==0, NA, Allstudebt.1),
@@ -45,8 +46,8 @@ grad <- PLVTPid[PLVTPid$COHORT<=2010 & ! is.na(PLVTPid$COHORT),] %>% mutate(G4= 
                                                                             grad6= ifelse(GRAD6==100,1,0),
                                                                             grad4= ifelse(GRAD4==100,1,0))
 
-PLVTELSE <-  PLVTELSE %>% mutate(Ethnicity= ifelse(Ethnicity %in% c('Asian','Asian/PI','Hawaii/PI'), 'Asian/Hawaii/PI', Ethnicity))%>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN ) %>% mutate(type='ELSE')
-PLVT2 <- PLVTPid %>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN ) %>% mutate(type=' PROB')
+PLVTELSE <-  PLVTELSE %>% mutate(Ethnicity= ifelse(Ethnicity %in% c('Asian','Asian/PI','Hawaii/PI'), 'Asian/Hawaii/PI', Ethnicity))%>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN ,ATHLETE) %>% mutate(type='ELSE')
+PLVT2 <- PLVTPid %>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN, ATHLETE) %>% mutate(type=' PROB')
 
 PLVT2 <- rbind(PLVTELSE, PLVT2)
 
@@ -352,6 +353,8 @@ table_data1[["Pell 1st Yr"]] <- getT1Stat1("PELL_1ST_YR")
 table_data1[["Pell Any Yr"]] <- getT1Stat1("PELL_ANY_YEAR")
 table_data1[["FAFSA 1st Gen"]] <- getT1Stat1("FIRST_GEN_FA_1ST_YR")
 table_data1[["Admission 1st Gen"]] <- getT1Stat1("FIRST_GEN")
+table_data1[["Athlete"]] <- getT1Stat1("ATHLETE")
+table_data1[["College at initial ASUS"]] <- getT1Stat1("ASUS1stCollShort")
 
 
 rgroup <- c()
@@ -379,8 +382,8 @@ for (varlabel in names(table_data1)){
 ```{r, echo=FALSE}
 library(Gmisc)
 #colnames(output_data1) <- c('Demographic Variable', colnames(output_data1))
-htmlTable(output_data1[c(1:11,13,17,22,25),], align="rrrr",
-          rgroup=rgroup, n.rgroup=c(1,2,8,1,1,1,1), 
+htmlTable(output_data1[c(1:11,13,17,22,25,28, 32,33,35,36:39,42,45,50:52,55,57:58,60),], align="rrrr",
+          rgroup=rgroup, n.rgroup=c(1,2,8,1,1,1,1,1), 
           rgroupCSSseparator="   ", 
           
           rowlabel=" ", 
@@ -388,7 +391,7 @@ htmlTable(output_data1[c(1:11,13,17,22,25),], align="rrrr",
           tfoot="NOte: ASUS population was tracked till end of FS16. The ASUS count was calcuated from their first semester with acdemic probation till FS16. The students' entering cohort could be earlier than FS05, therefore, they may have different ASUS count if different tracking timframe is applied. ", 
         
           css.cell = rbind(rep("background: lightgrey; padding-left: 3.5em; padding-right: 3.5em;", times=ncol(output_data1)+1),
-                           matrix("", ncol=ncol(output_data1)+1, nrow=nrow(output_data1[c(1:11,13,17,22,25),]))))
+                           matrix("", ncol=ncol(output_data1)+1, nrow=nrow(output_data1[c(1:11,13,17,22,25,28,32,33,35,36:39,42,45,50:52,55,57:58,60),]))))
 ```
 
 
@@ -415,6 +418,7 @@ table_data1[["Pell 1st Yr"]] <- getT1Stat1("PELL_1ST_YR")
 table_data1[["Pell Any Yr"]] <- getT1Stat1("PELL_ANY_YEAR")
 table_data1[["FAFSA 1st Gen"]] <- getT1Stat1("FIRST_GEN_FA_1ST_YR")
 table_data1[["Admission 1st Gen"]] <- getT1Stat1("FIRST_GEN")
+table_data1[["Athlete"]] <- getT1Stat1("ATHLETE")
 
 
 rgroup <- c()
@@ -442,8 +446,8 @@ for (varlabel in names(table_data1)){
 ```{r, echo=FALSE}
 library(Gmisc)
 #colnames(output_data1) <- c('Demographic Variable', colnames(output_data1))
-htmlTable(output_data1[c(1:12,14,18,23,26),], align="lrrr",
-          rgroup=rgroup, n.rgroup=c(1,2,9,1,1,1,1), 
+htmlTable(output_data1[c(1:12,14,18,23,26,29),], align="lrrr",
+          rgroup=rgroup, n.rgroup=c(1,2,9,1,1,1,1,1), 
           rgroupCSSseparator="   ", 
           
           rowlabel=" ", 
@@ -452,5 +456,67 @@ htmlTable(output_data1[c(1:12,14,18,23,26),], align="lrrr",
           tfoot="NOte: ASUS population was tracked till end of FS16. The ASUS count was calcuated from their first semester with acdemic probation till FS16. The students' entering cohort could be earlier than FS05, therefore, they may have different ASUS count if different tracking timframe is applied. ", 
         
           css.cell = rbind(rep("background: lightgrey; padding-left: 3.5em; padding-right: 3.5em;", times=ncol(output_data1)+1),
-                           matrix("", ncol=ncol(output_data1)+1, nrow=nrow(output_data1[c(1:12,14,18,23,26),]))))
+                           matrix("", ncol=ncol(output_data1)+1, nrow=nrow(output_data1[c(1:12,14,18,23,26,29),]))))
+```
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+
+##### ASUS Action by college and Term
+```{r, echo=FALSE}
+#Fall
+ASUSDF <- ASUSD %>% filter(substr(Term_Code,1,2)=='FS') %>% arrange(Term_Seq_Id) %>%  group_by(Short_Name, Term_Code) %>% 
+        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
+ASUSDF1 <- ASUSD %>% filter(substr(Term_Code,1,2)=='FS') %>% arrange(Term_Seq_Id)
+ASUSDF1$Short_Name <- ' Overall'
+ASUSDF1 <- ASUSDF1  %>%  group_by(Short_Name, Term_Code) %>% 
+        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
+ASUSDF <- rbind(ASUSDF1, ASUSDF)
+
+
+library(reshape2)
+ASUSDF <- melt(ASUSDF , id.vars = c('Short_Name','Term_Code'))
+ASUSDF$value <- ifelse(ASUSDF$variable=='Pct.Conflict', sprintf("%1.1f%%",ASUSDF$value*100), ifelse(ASUSDF$value>1000, format(round(ASUSDF$value), big.mark = ","),
+                                                                                                   round(ASUSDF$value) ))
+ASUSDF <- dcast(ASUSDF, Short_Name + variable ~ Term_Code)
+ASUSDF <- ASUSDF %>% mutate(c=1)%>% group_by(Short_Name) %>% mutate(seq=cumsum(c)) 
+ASUSDF <- as.data.frame( ASUSDF) %>% mutate(Short_Name= ifelse(seq>1, NA, as.character( Short_Name) )) %>% select(-c(seq,c))
+names(ASUSDF)[1:2] <- c('College', ' ')
+htmlTable(ASUSDF,rnames=F,caption="ASUS Action by colleges and Fall Terms",align="llrr",
+          col.rgroup = c("none","none", "#F7F7F7"),
+          css.cell = rbind(rep("background: lightgrey; padding-left: 1.7em; padding-right: 1.7em;", times=ncol(ASUSDF)),
+                           matrix("", ncol=ncol(ASUSDF), nrow=nrow(ASUSDF))))
+```
+
+<br/>
+<br/>
+<br/>
+<br/>
+
+```{r, echo=FALSE}
+#Fall
+ASUSDF <- ASUSD %>% filter(substr(Term_Code,1,2)=='SS') %>% arrange(Term_Seq_Id) %>%  group_by(Short_Name, Term_Code) %>% 
+        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
+ASUSDF1 <- ASUSD %>% filter(substr(Term_Code,1,2)=='SS') %>% arrange(Term_Seq_Id)
+ASUSDF1$Short_Name <- ' Overall'
+ASUSDF1 <- ASUSDF1  %>%  group_by(Short_Name, Term_Code) %>% 
+        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
+ASUSDF <- rbind(ASUSDF1, ASUSDF)
+
+
+library(reshape2)
+ASUSDF <- melt(ASUSDF , id.vars = c('Short_Name','Term_Code'))
+ASUSDF$value <- ifelse(ASUSDF$variable=='Pct.Conflict', sprintf("%1.1f%%",ASUSDF$value*100), ifelse(ASUSDF$value>1000, format(round(ASUSDF$value), big.mark = ","),
+                                                                                                   round(ASUSDF$value) ))
+ASUSDF <- dcast(ASUSDF, Short_Name + variable ~ Term_Code)
+ASUSDF <- ASUSDF %>% mutate(c=1)%>% group_by(Short_Name) %>% mutate(seq=cumsum(c)) 
+ASUSDF <- as.data.frame( ASUSDF) %>% mutate(Short_Name= ifelse(seq>1, NA, as.character( Short_Name) )) %>% select(-c(seq,c))
+names(ASUSDF)[1:2] <- c('College', ' ')
+htmlTable(ASUSDF,rnames=F,caption="ASUS Action by colleges and Spring Terms",align="llrr",
+          col.rgroup = c("none","none", "#F7F7F7"),
+          css.cell = rbind(rep("background: lightgrey; padding-left: 1.7em; padding-right: 1.7em;", times=ncol(ASUSDF)),
+                           matrix("", ncol=ncol(ASUSDF), nrow=nrow(ASUSDF))))
 ```
