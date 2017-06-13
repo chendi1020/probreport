@@ -1,10 +1,9 @@
 ---
 title: "Summary of Probation Analyses"
-output:
-  html_document: default
-  pdf_document: default
-  word_document: default
 date: "May 2017"
+output:
+  word_document: 
+   reference_docx: wordstyleref.docx
 ---
 
 ```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F, results='hide'}
@@ -28,16 +27,14 @@ runif(1)
 
 ```{r, echo=FALSE}
 load("S:/Institutional Research/Chen/Probation/May 2017 New Analysis/ASUSAction/Data/PLVTPid.Rda")
-#load( "S:/Institutional Research/Chen/Probation/May 2017 New Analysis/Data/PLVTELSE.Rda")
+load( "S:/Institutional Research/Chen/Probation/May 2017 New Analysis/Data/PLVTELSE.Rda")
 load("S:/Institutional Research/Chen/Probation/May 2017 New Analysis/Data/ASUSD.Rda")
 library(dplyr)
-
-PLVTall <- PLVTPid
 #PLVTPid <- PLVTPid %>% mutate(Alltdebt.1= ifelse(is.na(Alltdebt.1) | Alltdebt.1==0, NA, Alltdebt.1),
  #                             Allstudebt.1= ifelse(is.na(Allstudebt.1) | Allstudebt.1==0, NA, Allstudebt.1),
   #                            AllParloan.1= ifelse(is.na(AllParloan.1) | AllParloan.1==0, NA, AllParloan.1),
    #                           AllMSUcost.1= ifelse(is.na(AllMSUcost.1) | AllMSUcost.1==0, NA, AllMSUcost.1))
-PLVTPid <- PLVTall %>% filter(IntiType=='PROB') %>% mutate(Ethnicity= ifelse(Ethnicity %in% c('Asian','Asian/PI','Hawaii/PI'), 'Asian/Hawaii/PI', Ethnicity),
+PLVTPid <- PLVTPid %>% mutate(Ethnicity= ifelse(Ethnicity %in% c('Asian','Asian/PI','Hawaii/PI'), 'Asian/Hawaii/PI', Ethnicity),
                               ttlASUScntre= ifelse(TotalASUScnt>=8,'8+', paste(as.character(TotalASUScnt), sep="" )),
                               Overall= 'Overall')
 
@@ -50,12 +47,10 @@ grad <- PLVTPid[PLVTPid$COHORT<=2010 & ! is.na(PLVTPid$COHORT),] %>% mutate(G4= 
                                                                             grad6= ifelse(GRAD6==100,1,0),
                                                                             grad4= ifelse(GRAD4==100,1,0))
 
-PLVTELSE <- PLVTall %>% filter(IntiType=='GOOD') %>% mutate(Ethnicity= ifelse(Ethnicity %in% c('Asian','Asian/PI','Hawaii/PI'), 'Asian/Hawaii/PI', Ethnicity))%>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN ,ATHLETE) %>% mutate(type='ELSE')
+PLVTELSE <-  PLVTELSE %>% mutate(Ethnicity= ifelse(Ethnicity %in% c('Asian','Asian/PI','Hawaii/PI'), 'Asian/Hawaii/PI', Ethnicity))%>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN ,ATHLETE) %>% mutate(type='ELSE')
 PLVT2 <- PLVTPid %>% select(Pid,Gndr_Flag, Ethnicity, PELL_1ST_YR, PELL_ANY_YEAR, FIRST_GEN_FA_1ST_YR, FIRST_GEN, ATHLETE) %>% mutate(type=' PROB')
 
 PLVT2 <- rbind(PLVTELSE, PLVT2)
-
-GOOD <- PLVTall %>% filter(IntiType=='GOOD')
 
 
 ```
@@ -84,7 +79,7 @@ To link the graduation outcome to the data, we computed the average of 4-year, 6
 
 <br>
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, cache=T}
 source("H:/R setup/ODBC Connection.R")
 
 PLVT <- sqlQuery(SISFull, "select distinct PLVT.Pid, PLVT.Term_Seq_Id,PLVT.Term_Code, Primary_Lvl_Flag, Student_Level_Code
@@ -114,17 +109,13 @@ library(htmlTable)
 tab<-PLVT %>% group_by(Long_Desc) %>% summarise(Headcount= n() )%>% arrange(desc(Headcount)) %>% rename(Student.Level= Long_Desc)
 #datatable(as.data.frame(tab), rownames = F)
 tab<- as.data.frame(tab) %>% mutate(Headcount= ifelse(Headcount>=1000, format(Headcount, big.mark=","), Headcount))
-htmlTable(tab,rnames=F,caption="Students by acdemic level", align="lrrr",
-          
-          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab)),
-                           matrix("", ncol=ncol(tab), nrow=nrow(tab))))
+kable(tab,rnames=F,caption="Students by acdemic level", align="lrrr"
+          )
 
 ```
 
 <br>
 <br>
-
-
 Table 3 include the total number of borrowers, average loan amount for borrowers breaking down by number of ASUS action count and whether one followed ASUS policy. The analyses were conducted for total loan, student and parent loan separately. All cohorts were included. Generally, among borrowers, compared to those who 'follow the policy', those who 'conflicted with ASUS policy' borrowed 
 
 + an average of `r paste0('$', format(round(lm(Alltdebt.1 ~ Conflictremax, data=PLVTPid)$coefficients['ConflictremaxY']),big.mark=",")) ` more for total loan amount  (P `r ifelse(summary(lm(Alltdebt.1 ~ Conflictremax, data=PLVTPid))$coefficients[2,4]<0.0001, '<0.0001', paste0('=',summary(lm(Alltdebt.1 ~ Conflictremax, data=PLVTPid))$coefficients[2,4],sep="") )  `).
@@ -172,7 +163,7 @@ Similarly,Both ASUS count and whether students following ASUS policy have signif
 <br>
 
 
-```{r, echo=F}
+```{r, echo=F, cache=T}
 tab1 <- PLVTPid %>% group_by(TotalASUScnt, Conflictremax) %>% summarise(hc=n()) %>%  mutate( pct=hc/nrow(PLVTPid))
 tab1 <- tab1 %>% group_by(Conflictremax) %>%mutate(grpttl=sum(hc), pctgrp=hc/grpttl)
 
@@ -188,20 +179,16 @@ tab1$pctgrp <- ifelse(! is.na(tab1$pctgrp), sprintf("%1.1f%%", 100* tab1$pctgrp)
 names(tab1) <- c('Conflict', '  ASUS.Action.Count', 'Headcount', '%', '% within group')
 tab1 <- tab1 %>% select(-c(Conflict))
 
-library(htmlTable)
-htmlTable(tab1,rnames=F,caption="Table1 - Distribution of ASUS action count- All cohorts included",
-          rgroup = c('Follow ASUS Policy', 'Conflict with ASUS Policy'),
-          n.rgroup = c(10,10),tfoot="Source: SISFull ",
-          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab1)),
-                           matrix("", ncol=ncol(tab1), nrow=nrow(tab1))))
+library(pander)
+kable(tab1,rnames=F,caption="Table1 - Distribution of ASUS action count- All cohorts included"
+          )
 ```
 
 
 <br>
 <br>
 
-
-```{r, echo=F}
+```{r, echo=F, cache=T}
 tab2 <- grad %>% group_by(TotalASUScnt, Conflictremax) %>% summarise(hc=n(),
                                                                      gradrate4= mean(GRAD4),
                                                                      gradrate6= mean(GRAD6),
@@ -216,29 +203,17 @@ overall <- grad %>% summarise(hc=n(),gradrate4= mean(GRAD4),gradrate6= mean(GRAD
 tab2 <- rbind(as.data.frame(tab2t), as.data.frame(tab2),as.data.frame(overall)) %>% select(Conflictremax,TotalASUScnt,hc, pct,gradrate4, gradrate6, TTD) %>% arrange(Conflictremax)
 
 
-
-tab2 <- tab2 %>% select(-c(Conflictremax))
-
-GOODtab <- GOOD %>% filter(COHORT<=2010 & ! is.na(COHORT))%>% group_by(TotalASUScnt)%>% summarise(hc=n(),
-                                                                                gradrate4= mean(GRAD4),
-                                                                     gradrate6= mean(GRAD6),
-                                                                     TTD= mean(TTD_IN_YEARS, na.rm=T)) %>%  mutate( pct=NA)
-
-tab2 <- rbind(GOODtab, tab2) %>% select(TotalASUScnt, hc, pct, gradrate4, gradrate6, TTD)
 tab2$hc <- ifelse(tab2$hc>=1000,format(tab2$hc, big.mark = ","), tab2$hc) 
-tab2$pct <- ifelse(! is.na(tab2$pct),  sprintf("%1.1f%%", 100* tab2$pct), NA)
+tab2$pct <- sprintf("%1.1f%%", 100* tab2$pct)
 tab2$gradrate4 <- ifelse(! is.na(tab2$gradrate4), sprintf("%1.1f%%",tab2$gradrate4), tab2$gradrate4)
 tab2$gradrate6 <- ifelse(! is.na(tab2$gradrate6), sprintf("%1.1f%%",tab2$gradrate6), tab2$gradrate6)
-tab2$TTD<- ifelse( is.nan(tab2$TTD), NA,  sprintf("%1.1f", tab2$TTD))
+tab2$TTD<- ifelse( is.nan(tab2$TTD), NA, round(tab2$TTD,1))
+tab2 <- tab2 %>% select(-c(Conflictremax))
 
 names(tab2) <- c( '  ASUS.Action.Count', 'Headcount', '%', '4yr Grad Rate', '6yr Grad Rate', 'Avg TTD')
 
-htmlTable(tab2,rnames=F,caption="Table2 - Graduation Outcome in relation to the distribution of ASUS Action Counts - 
-          Limited to cohort within a six-year graduation rate (till 2010 cohort)",
-          rgroup = c('All GOOD' ,'ASUS-Overall','Follow ASUS Policy', 'Conflict with ASUS Policy'),align="lrrr",
-          n.rgroup = c(1,1,9,10), tfoot="Source: SISFull ",
-          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab2)),
-                           matrix("", ncol=ncol(tab2), nrow=nrow(tab2))))
+kable(tab2,caption="Table2 - Graduation Outcome in relation to the distribution of ASUS Action Counts - 
+          Limited to cohort within a six-year graduation rate (till 2010 cohort)")
 ```
 
 
@@ -246,7 +221,7 @@ htmlTable(tab2,rnames=F,caption="Table2 - Graduation Outcome in relation to the 
 <br>
 
 
-```{r, echo=F}
+```{r, echo=F, cache=T}
 tab3 <- PLVTPid %>%  group_by( Conflictremax,TotalASUScnt) %>%
         summarise(hc=n(), Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
                    avgsdebt= mean(Allstudebt.1, na.rm=T),
@@ -265,18 +240,7 @@ overall3 <- PLVTPid %>% mutate(Conflictremax=' Overall',TotalASUScnt= ' ')%>%  g
                   avgpdebt=mean(AllParloan.1, na.rm=T),
                    avgmsuc=mean(AllMSUcost.1, na.rm=T))
 
-tab3 <- rbind(as.data.frame(tab3t), as.data.frame(tab3),as.data.frame(overall3))  %>% arrange(Conflictremax)
-
-
-tab3 <- tab3 %>% select(-c(Conflictremax))
-
-GOODtab3 <- GOOD %>%  group_by(TotalASUScnt)%>%summarise(hc=n(), Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
-                   avgsdebt= mean(Allstudebt.1, na.rm=T),
-                  avgpdebt=mean(AllParloan.1, na.rm=T),
-                   avgmsuc=mean(AllMSUcost.1, na.rm=T))
-tab3<- rbind(GOODtab3, tab3)
-
-tab3 <- tab3 %>%
+tab3 <- rbind(as.data.frame(tab3t), as.data.frame(tab3),as.data.frame(overall3))  %>% arrange(Conflictremax)%>%
         mutate(hc=ifelse(hc>=1000,format(hc, big.mark = ","), hc),
                Ndebt= ifelse(Ndebt>=1000,format(Ndebt, big.mark = ","), Ndebt),
               avgtdebt=  ifelse(avgtdebt>=1000,format(round(avgtdebt), big.mark = ","), round(avgtdebt) ),
@@ -284,17 +248,14 @@ tab3 <- tab3 %>%
                avgpdebt= ifelse(avgpdebt>=1000,format(round(avgpdebt), big.mark = ","), round(avgpdebt) ),
                avgmsuc= ifelse(avgmsuc>=1000,format(round(avgmsuc), big.mark = ","), round(avgmsuc) ))
 
+
+tab3 <- tab3 %>% select(-c(Conflictremax))
 tab3 <- as.data.frame(tab3) %>% mutate(avgtdebt=  gsub(" ", "", paste0("$", avgtdebt, sep=""), fixed = TRUE),
         avgsdebt=  gsub(" ", "", paste0("$", avgsdebt, sep=""), fixed = TRUE),avgpdebt= gsub(" ", "", paste0("$", avgpdebt, sep=""), fixed = TRUE), avgmsuc= gsub(" ", "", paste0("$", avgmsuc, sep=""), fixed = TRUE))
 
 names(tab3) <- c( '  ASUS.Action.Count', 'Headcount', 'N with FA data', 'Avg Total Debt', 'Avg Student Debt', 'Avg Parent Debt', 'Avg MSU Cost')
 
-htmlTable(tab3,rnames=F,caption="Table3 - THe average amount of loan and institutional aid - All Cohorts included",
-          rgroup = c('All GOOD','ASUS-Overall','Follow ASUS Policy', 'Conflict with ASUS Policy'),align="lrrr",
-          n.rgroup = c(1,1,10,10), tfoot="Source: SISFull ",
-          
-          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab3)),
-                           matrix("", ncol=ncol(tab3), nrow=nrow(tab3))))
+kable(tab3,caption="Table3 - THe average amount of loan and institutional aid - All Cohorts included"  )
 ```
 
 
@@ -303,7 +264,7 @@ htmlTable(tab3,rnames=F,caption="Table3 - THe average amount of loan and institu
 <br>
 
 
-```{r, echo=F}
+```{r, echo=F, cache=T}
 tab4 <- grad %>%  group_by( Conflictremax,TotalASUScnt) %>%
         summarise(hc=n(), gradrate4= mean(GRAD4), gradrate6=mean(GRAD6), ttd=mean(TTD_IN_YEARS, na.rm=T),
                   Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
@@ -325,17 +286,7 @@ overall4 <- grad %>% mutate(Conflictremax=' Overall',TotalASUScnt= ' ')%>%  grou
                   avgpdebt=mean(AllParloan.1, na.rm=T),
                    avgmsuc=mean(AllMSUcost.1, na.rm=T))
 
-tab4 <- rbind(as.data.frame(tab4t), as.data.frame(tab4),as.data.frame(overall4))  %>% arrange(Conflictremax) %>% select(-c(Conflictremax)) 
-
-GOODtab4 <- GOOD %>% filter(COHORT<=2010 & ! is.na(COHORT))%>% group_by(TotalASUScnt)%>%summarise(hc=n(), gradrate4= mean(GRAD4), gradrate6=mean(GRAD6), ttd=mean(TTD_IN_YEARS, na.rm=T),
-                  Ndebt= sum(! is.na(Alltdebt.1)),avgtdebt= mean(Alltdebt.1, na.rm=T),
-                   avgsdebt= mean(Allstudebt.1, na.rm=T),
-                  avgpdebt=mean(AllParloan.1, na.rm=T),
-                   avgmsuc=mean(AllMSUcost.1, na.rm=T)) 
-
-tab4 <- rbind(GOODtab4, tab4)
-
-tab4 <- tab4 %>%
+tab4 <- rbind(as.data.frame(tab4t), as.data.frame(tab4),as.data.frame(overall4))  %>% arrange(Conflictremax)%>%
         mutate(hc=ifelse(hc>=1000,format(hc, big.mark = ","), hc),
               gradrate4= ifelse(! is.na(gradrate4), sprintf("%1.1f%%",gradrate4), gradrate4),
                gradrate6= ifelse(! is.na(gradrate6), sprintf("%1.1f%%",gradrate6), gradrate6),
@@ -346,17 +297,17 @@ tab4 <- tab4 %>%
                avgpdebt= ifelse(avgpdebt>=1000,format(round(avgpdebt), big.mark = ","), round(avgpdebt) ),
                avgmsuc= ifelse(avgmsuc>=1000,format(round(avgmsuc), big.mark = ","), round(avgmsuc) ))
 
+
+tab4 <- tab4 %>% select(-c(Conflictremax))
 tab4 <- as.data.frame(tab4) %>% mutate(avgtdebt=  gsub(" ", "", paste0("$", avgtdebt, sep=""), fixed = TRUE),
         avgsdebt=  gsub(" ", "", paste0("$", avgsdebt, sep=""), fixed = TRUE),avgpdebt= gsub(" ", "", paste0("$", avgpdebt, sep=""), fixed = TRUE), avgmsuc= gsub(" ", "", paste0("$", avgmsuc, sep=""), fixed = TRUE))
 
 names(tab4) <- c( ' ASUS.Action.Count', 'Headcount', 'Grad by 4yr', 'Grad by 6yr','Avg TTD' , 'N with FA data', 'Avg Total Debt', 'Avg Student Debt', 'Avg Parent Debt', 'Avg MSU Cost')
 
-htmlTable(tab4,rnames=F,caption="Table4 - THe average amount of loan and institutional aid - Limited to Cohorts with six-year grad rate (till 2010 cohort)",
-          rgroup = c('All GOOD','ASUS-Overall','Follow ASUS Policy', 'Conflict with ASUS Policy'),align="lrrr",
-          n.rgroup = c(1,1,9,10), tfoot="Source: SISFull. Note: FA data contains cumulative amount of loans/institutional aid at MSU since the intital probation term to 05/25/2017 ",
-          
-          css.cell = rbind(rep("background: lightgrey; padding-left: .7em; padding-right: .7em;", times=ncol(tab4)),
-                           matrix("", ncol=ncol(tab4), nrow=nrow(tab4))))
+kable(tab4,caption="Table4 - THe average amount of loan and institutional aid - Limited to Cohorts with six-year grad rate (till 2010 cohort)"
+            
+             )
+         
 ```
 
 
@@ -412,17 +363,11 @@ for (varlabel in names(table_data1)){
 ##### Demographic Characteristics of ASUS population by ASUS count
 ```{r, echo=FALSE}
 library(Gmisc)
+library(pander)
 #colnames(output_data1) <- c('Demographic Variable', colnames(output_data1))
-htmlTable(output_data1[c(1:11,13,17,22,25,28, 30:45),], align="rrrr",
-          rgroup=rgroup, n.rgroup=c(1,2,8,1,1,1,1,1), 
-          rgroupCSSseparator="   ", 
-          
-          rowlabel=" ", 
-          caption="Population consists of undergrads who had academic probation at the end of the semester from Fall 05 through US15 ", 
-          tfoot="NOte: ASUS population was tracked till end of FS16. The ASUS count was calcuated from their first semester with acdemic probation till FS16. The students' entering cohort could be earlier than FS05, therefore, they may have different ASUS count if different tracking timframe is applied. ", 
-        
-          css.cell = rbind(rep("background: lightgrey; padding-left: 3.5em; padding-right: 3.5em;", times=ncol(output_data1)+1),
-                           matrix("", ncol=ncol(output_data1)+1, nrow=nrow(output_data1[c(1:11,13,17,22,25,28, 30:45),]))))
+kable(output_data1[c(1:11,13,17,22,25,28, 32,33,35,36:39,42,45,50:52,55,57:58,60),], align="rrrr",
+         
+          caption="Population consists of undergrads who had academic probation at the end of the semester from Fall 05 through US15 ")
 ```
 
 
@@ -476,18 +421,14 @@ for (varlabel in names(table_data1)){
 ##### Demographic Characteristics of ASUS population vs. Other undergraduates
 ```{r, echo=FALSE}
 library(Gmisc)
+library(pander)
 #colnames(output_data1) <- c('Demographic Variable', colnames(output_data1))
-htmlTable(output_data1[c(1:12,14,18,23,26,29),], align="lrrr",
-          rgroup=rgroup, n.rgroup=c(1,2,9,1,1,1,1,1), 
-          rgroupCSSseparator="   ", 
+kable(output_data1[c(1:12,14,18,23,26,29),], align="lrrr",
           
-          rowlabel=" ", 
           caption="PROB consists of undergrads who had at least one academic probation at the end of the semester from Fall 05 through US15,
-          ELSE are undergrads who enrolled during the same timeframe but had not had one ASUS status till FS16", 
-          tfoot="NOte: ASUS population was tracked till end of FS16. The ASUS count was calcuated from their first semester with acdemic probation till FS16. The students' entering cohort could be earlier than FS05, therefore, they may have different ASUS count if different tracking timframe is applied. ", 
+          ELSE are undergrads who enrolled during the same timeframe but had not had one ASUS status till FS16"
         
-          css.cell = rbind(rep("background: lightgrey; padding-left: 3.5em; padding-right: 3.5em;", times=ncol(output_data1)+1),
-                           matrix("", ncol=ncol(output_data1)+1, nrow=nrow(output_data1[c(1:12,14,18,23,26,29),]))))
+          )
 ```
 <br/>
 <br/>
@@ -497,33 +438,26 @@ htmlTable(output_data1[c(1:12,14,18,23,26,29),], align="lrrr",
 <br/>
 
 ##### ASUS Action by college and Term
-##### ASUS Action includes PROB, FINL, EXTP, DISM, RECS
-##### Pct.RD_FEP are the % of conflicts that should be DISM or RECS but were given EXTP/FINL/PROB"
 ```{r, echo=FALSE}
 #Fall
-ASUSDF <- ASUSD %>% filter(substr(Term_Code,1,2)=='FS') %>% arrange(Term_Seq_Id)%>% mutate(RDFEP= ifelse(RD_FINL==1 | RD_EXTP==1 | RD_PROB==1,1,0)) %>%  group_by(Short_Name, Term_Code) %>% 
-        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum),Pct.RD_FEP= mean(RDFEP))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
+ASUSDF <- ASUSD %>% filter(substr(Term_Code,1,2)=='FS') %>% arrange(Term_Seq_Id) %>%  group_by(Short_Name, Term_Code) %>% 
+        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
 ASUSDF1 <- ASUSD %>% filter(substr(Term_Code,1,2)=='FS') %>% arrange(Term_Seq_Id)
 ASUSDF1$Short_Name <- ' Overall'
-ASUSDF1 <- ASUSDF1  %>% mutate(RDFEP= ifelse(RD_FINL==1 | RD_EXTP==1 | RD_PROB==1,1,0))%>%  group_by(Short_Name, Term_Code) %>% 
-        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum),
-                  Pct.RD_FEP= mean(RDFEP))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS
-                                                                               )
+ASUSDF1 <- ASUSDF1  %>%  group_by(Short_Name, Term_Code) %>% 
+        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
 ASUSDF <- rbind(ASUSDF1, ASUSDF)
 
 
 library(reshape2)
 ASUSDF <- melt(ASUSDF , id.vars = c('Short_Name','Term_Code'))
-ASUSDF$value <- ifelse(ASUSDF$variable %in% c('Pct.Conflict','Pct.RD_FEP' ), sprintf("%1.1f%%",ASUSDF$value*100), ifelse(ASUSDF$value>1000, format(round(ASUSDF$value), big.mark = ","),
+ASUSDF$value <- ifelse(ASUSDF$variable=='Pct.Conflict', sprintf("%1.1f%%",ASUSDF$value*100), ifelse(ASUSDF$value>1000, format(round(ASUSDF$value), big.mark = ","),
                                                                                                    round(ASUSDF$value) ))
 ASUSDF <- dcast(ASUSDF, Short_Name + variable ~ Term_Code)
 ASUSDF <- ASUSDF %>% mutate(c=1)%>% group_by(Short_Name) %>% mutate(seq=cumsum(c)) 
 ASUSDF <- as.data.frame( ASUSDF) %>% mutate(Short_Name= ifelse(seq>1, NA, as.character( Short_Name) )) %>% select(-c(seq,c))
 names(ASUSDF)[1:2] <- c('College', ' ')
-htmlTable(ASUSDF,rnames=F,caption="ASUS Action by colleges and Fall Terms",align="llrr",
-          col.rgroup = c("none","none", "#F7F7F7","#F7F7F7"), 
-          css.cell = rbind(rep("background: lightgrey; padding-left: 1.7em; padding-right: 1.7em;", times=ncol(ASUSDF)),
-                           matrix("", ncol=ncol(ASUSDF), nrow=nrow(ASUSDF))))
+kable(ASUSDF,rnames=F,caption="ASUS Action by colleges and Fall Terms",align="llrr")
 ```
 
 <br/>
@@ -532,29 +466,24 @@ htmlTable(ASUSDF,rnames=F,caption="ASUS Action by colleges and Fall Terms",align
 <br/>
 
 ```{r, echo=FALSE}
-
 #Fall
-ASUSDF <- ASUSD %>% filter(substr(Term_Code,1,2)=='SS') %>% arrange(Term_Seq_Id)%>% mutate(RDFEP= ifelse(RD_FINL==1 | RD_EXTP==1 | RD_PROB==1,1,0)) %>%  group_by(Short_Name, Term_Code) %>% 
-        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum),Pct.RD_FEP= mean(RDFEP))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
+ASUSDF <- ASUSD %>% filter(substr(Term_Code,1,2)=='SS') %>% arrange(Term_Seq_Id) %>%  group_by(Short_Name, Term_Code) %>% 
+        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
 ASUSDF1 <- ASUSD %>% filter(substr(Term_Code,1,2)=='SS') %>% arrange(Term_Seq_Id)
 ASUSDF1$Short_Name <- ' Overall'
-ASUSDF1 <- ASUSDF1  %>% mutate(RDFEP= ifelse(RD_FINL==1 | RD_EXTP==1 | RD_PROB==1,1,0))%>%  group_by(Short_Name, Term_Code) %>% 
-        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum),
-                  Pct.RD_FEP= mean(RDFEP))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS
-                                                                               )
+ASUSDF1 <- ASUSDF1  %>%  group_by(Short_Name, Term_Code) %>% 
+        summarise(Total.ASUS= n(), N.of.Conflict=sum(conflictrenum))%>% mutate(Pct.Conflict= N.of.Conflict/Total.ASUS)
 ASUSDF <- rbind(ASUSDF1, ASUSDF)
 
 
 library(reshape2)
 ASUSDF <- melt(ASUSDF , id.vars = c('Short_Name','Term_Code'))
-ASUSDF$value <- ifelse(ASUSDF$variable %in% c('Pct.Conflict','Pct.RD_FEP' ), sprintf("%1.1f%%",ASUSDF$value*100), ifelse(ASUSDF$value>1000, format(round(ASUSDF$value), big.mark = ","),
+ASUSDF$value <- ifelse(ASUSDF$variable=='Pct.Conflict', sprintf("%1.1f%%",ASUSDF$value*100), ifelse(ASUSDF$value>1000, format(round(ASUSDF$value), big.mark = ","),
                                                                                                    round(ASUSDF$value) ))
 ASUSDF <- dcast(ASUSDF, Short_Name + variable ~ Term_Code)
 ASUSDF <- ASUSDF %>% mutate(c=1)%>% group_by(Short_Name) %>% mutate(seq=cumsum(c)) 
 ASUSDF <- as.data.frame( ASUSDF) %>% mutate(Short_Name= ifelse(seq>1, NA, as.character( Short_Name) )) %>% select(-c(seq,c))
 names(ASUSDF)[1:2] <- c('College', ' ')
-htmlTable(ASUSDF,rnames=F,caption="ASUS Action by colleges and Fall Terms",align="llrr",
-          col.rgroup = c("none","none", "#F7F7F7","#F7F7F7"),
-          css.cell = rbind(rep("background: lightgrey; padding-left: 1.7em; padding-right: 1.7em;", times=ncol(ASUSDF)),
-                           matrix("", ncol=ncol(ASUSDF), nrow=nrow(ASUSDF))))
+kable(ASUSDF,rnames=F,caption="ASUS Action by colleges and Spring Terms",align="llrr")
 ```
+
